@@ -1,0 +1,58 @@
+{% extends 'base.html' %}{% block content %}
+<body
+    style="
+        height: 90vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    "
+>
+    <!-- ERROR CONTAINER  -->
+    {% if error != "noerror" %}
+    <div id="error">
+        &nbsp;&nbsp; {{ error }}
+        <span id="error_cross_button" onclick="hide_error()">
+            <span class="material-icons"> close </span>
+        </span>
+    </div>
+    {% endif %}
+    <div id="signup_container">
+        <form method="post">
+            <input
+                name="username"
+                type="text"
+                placeholder="username"
+                required
+            />
+            <input
+                name="password"
+                type="password"
+                placeholder="password"
+                required
+            />
+            {% if signup=="True" %}
+            <input type="text" placeholder="email address" required />
+            <input type="submit" value="SIGNUP" />
+            {% else %}
+            <input type="submit" value="LOGIN" />
+            {% endif %}
+        </form>
+        {% if signup=="True" %}
+        <div id="already_have_account_or_not_have_account">
+            Already have an account ?<a href="{{url_for('login')}}"> Login !</a>
+        </div>
+        {% else %}
+        <div id="already_have_account_or_not_have_account">
+            Don't have an account ?<a href="{{url_for('signup')}}"> Signup !</a>
+        </div>
+        {% endif %}
+    </div>
+</body>
+<script>
+    function hide_error() {
+        document.getElementById("error").style.display = "none";
+    }
+    console.log("{{error}}");
+</script>
+{% endblock %}

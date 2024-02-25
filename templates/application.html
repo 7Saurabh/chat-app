@@ -1,0 +1,206 @@
+{% extends 'base.html' %}{% block content %}
+<style>
+    #nav_item button {
+        background-color: transparent;
+        border: none;
+        outline: none;
+        padding: 0;
+        cursor: pointer;
+        color: white;
+    }
+    #refer_code {
+        margin-top: 450px; /* "margin-top property is set for now only, needs to be change in future"*/
+        color: white;
+        text-align: center;
+    }
+    #notifications_div p {
+        align-items: center;
+        padding: 10px;
+        color: black;
+        background-color: rgba(255, 255, 255, 1);
+    }
+    #notifications_div button {
+        cursor: pointer;
+        padding: 5px 20px;
+        background-color: white;
+        color: black;
+        border: 1px solid rgb(76, 175, 80);
+        border-radius: 3px;
+    }
+    #notifications_div button:hover {
+        background-color: rgb(76, 175, 80);
+        color: white;
+    }
+</style>
+<body>
+    <!-- [#] NAV CONTAINER -->
+    <div id="nav_container">
+        <a href="#"
+            ><div id="nav_item">
+                <span class="material-icons"> home </span>
+            </div>
+        </a>
+        <div onclick="show_search()" id="nav_item">
+            <span class="material-icons"> search </span>
+        </div>
+
+        <div onclick="show_notifications()" id="nav_item">
+            <span class="material-icons"> notifications_active </span>
+        </div>
+        <div title="logout" id="nav_item">
+            <form method="post">
+                <button name="logout" value="logout">
+                    <span class="material-icons"> logout </span>
+                </button>
+            </form>
+        </div>
+    </div>
+    <!-- [1] ADD FRIEND -->
+    <div id="addfriend_div">
+        <div onclick="show_nav()" id="cross_button">
+            <span class="material-icons"> close </span>
+        </div>
+        <form method="post">
+            <input
+                name="friend_code"
+                type="text"
+                placeholder="enter friend code"
+                id="addfriend_input_text"
+            />
+            <input
+                id="addfriend_input_submit"
+                value="Add Friend"
+                type="submit"
+            />
+        </form>
+        <div
+            onclick="copy_refer_code()"
+            title="click to copy refer code"
+            id="refer_code"
+        >
+            Refer Code : {{user_refer_code}}
+        </div>
+    </div>
+    <!-- [2] NOTIFICATIONS  -->
+    <div id="notifications_div">
+        <div onclick="show_nav()" id="cross_button">
+            <span class="material-icons"> close </span>
+        </div>
+        <form method="post">
+            <div id="accept_request">
+                {% for name in requests_received %}
+                <div>
+                    <p>
+                        {{ name[0] }} sent you a friend request &nbsp;&nbsp;
+                        <button name="accept_button" value="{{name[0]}}">
+                            accept
+                        </button>
+                    </p>
+                </div>
+                {% endfor %}
+            </div>
+        </form>
+    </div>
+    <!-- [#] FRIEND LIST CONTAINER -->
+    <form id="friend_list" method="post">
+        <!--we are using form instead of div as a container -->
+        {% for friend in friends %}
+        <button
+            name="chat_friend_button"
+            value="{{ friends[friends.index(friend)][1] }}"
+        >
+            {{ friends[friends.index(friend)][0] }}
+        </button>
+        {% endfor %}
+    </form>
+    <!-- [#] CHAT WINDOW -->
+    <div id="content">
+        <div id="chat_room_header">
+            <span>{{ chat_room_header_name }}</span>
+        </div>
+        <div id="message-container"></div>
+        <div class="inputs">
+            <input
+                type="text"
+                rows="3"
+                placeholder="Message"
+                name="message"
+                id="input_msg"
+            />
+            <button
+                type="button"
+                name="send"
+                id="send-btn"
+                onClick="sendMessage()"
+            >
+                send
+            </button>
+        </div>
+    </div>
+    <script type="text/javascript">
+        var socketio = io();
+
+        const message_container = document.getElementById("message-container");
+        var class_name;
+        const createMessage = (name, msg, time) => {
+            if ("{{ username }}" == name) {
+                class_name = "message-right";
+            } else {
+                class_name = "message-left";
+            }
+            const content = `
+        <div id="message" class=${class_name}>
+            <span id="sender_name">${name}</span><br />${msg}
+            <span id="time">${time}</span>
+        </div>
+        `;
+            message_container.innerHTML += content;
+            message_container.scrollTop = message_container.scrollHeight;
+        };
+
+        socketio.on("message", (data) => {
+            createMessage(data.name, data.message, data.time);
+        });
+
+        const sendMessage = () => {
+            //this function sends message to server from input box and then server sends message to all other clients
+            const message = document.getElementById("input_msg");
+            console.log(message.value);
+            if (message.value == "") return;
+            socketio.emit("message", { data: message.value });
+            message.value = "";
+        };
+    </script>
+    {% for msg in messages %}
+    <script type="text/javascript">
+        // console.log("{{msg[0]}}", "{{msg[1]}}");
+        createMessage("{{msg[0]}}", "{{msg[1]}}", "{{msg[2]}}"); //msg[0] = name, msg[1] = message,msg[2] = time
+    </script>
+    {% endfor %}
+</body>
+<script>
+    function show_search() {
+        document.getElementById("addfriend_div").style.display = "block";
+        document.getElementById("nav_container").style.display = "none";
+        document.getElementById("notifications_div").style.display = "none";
+    }
+    function show_nav() {
+        document.getElementById("notifications_div").style.display = "none";
+        document.getElementById("addfriend_div").style.display = "none";
+        document.getElementById("nav_container").style.display = "flex";
+    }
+    function show_notifications() {
+        document.getElementById("notifications_div").style.display = "block";
+        document.getElementById("addfriend_div").style.display = "none";
+        document.getElementById("nav_container").style.display = "none";
+    }
+    //WHEN NO CHAT(friend) IS CLICKED CHATTING WINDOW WILL BE HIDDEN
+    if ("{{code}}" === "") {
+        document.getElementById("content").style.display = "none";
+    }
+    function copy_refer_code() {
+        navigator.clipboard.writeText("{{user_refer_code}}");
+    }
+    console.log("{{username}}");
+</script>
+{% endblock %}
